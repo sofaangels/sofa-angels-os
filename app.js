@@ -6,6 +6,29 @@ let photos = [];
 let weeklyPost = null;
 let currentUser = null;
 let currentRole = "viewer";
+let currentDisplayName = "Sofa Angels";
+
+function initialsFromName(name){
+  return String(name || "SA")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0,2)
+    .map(part => part[0].toUpperCase())
+    .join("") || "SA";
+}
+
+function greetingByTime(){
+  const hour = new Date().getHours();
+  if(hour < 12) return "Good morning";
+  if(hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function updateGreeting(){
+  const firstName = String(currentDisplayName || "there").split(" ")[0];
+  const greeting = document.getElementById("greeting");
+  if(greeting) greeting.textContent = `${greetingByTime()}, ${firstName} 👋`;
+}
 
 function isAdmin(){ return currentRole === "admin"; }
 
@@ -42,10 +65,17 @@ async function loadRole(){
 
   if(!error && data?.role) currentRole = data.role;
 
-  const label = data?.display_name ? `${data.display_name} · ${currentRole}` : currentRole;
+  currentDisplayName = data?.display_name || currentUser.email || "Sofa Angels";
+  updateGreeting();
+
+  const profileName = document.getElementById("profileName");
+  const profileInitials = document.getElementById("profileInitials");
+  if(profileName) profileName.textContent = currentDisplayName;
+  if(profileInitials) profileInitials.textContent = initialsFromName(currentDisplayName);
+
   const roleBadge = document.getElementById("roleBadge");
-  roleBadge.textContent = label;
-  roleBadge.className = "sync ok";
+  roleBadge.textContent = currentRole === "admin" ? "Admin" : "Viewer";
+  roleBadge.className = "roleText";
 
   document.getElementById("addGroupBtn").style.display = isAdmin() ? "inline-block" : "none";
   document.getElementById("groupHelp").textContent = isAdmin()
@@ -116,7 +146,6 @@ function fallbackCopy(text){
 }
 function esc(text){ return String(text||"").replaceAll("\\","\\\\").replaceAll("'","\\'"); }
 function table(headers, rows){
-  // Adds mobile-friendly labels to each td based on the table headers.
   const processed = rows.map(row => {
     let i = 0;
     return row.replace(/<td(.*?)>/g, (match, attrs) => {
@@ -230,7 +259,7 @@ function renderToday(){
       <td><strong>${g.name}</strong></td>
       <td>${g.area||""}</td>
       <td>${g.allowed_days||""}</td>
-      <td><button onclick="copyAndOpen('${esc(g.link||"")}')">${g.link ? "Copy + Open Group" : "Copy Caption"}</button></td>
+      <td><button onclick="copyAndOpen('${esc(g.link||"")}')">${g.link ? "Copy + Open" : "Copy Only"}</button></td>
       <td>${statusText(g)}${g.notes ? "<br><small>"+g.notes+"</small>" : ""}</td>
     </tr>
   `);

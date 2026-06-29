@@ -11,6 +11,7 @@
 
 <section id="loginScreen" class="loginScreen">
   <div class="loginCard">
+    <img src="sofa-angels-logo.png" alt="Sofa Angels" class="loginLogo">
     <h1>Sofa Angels OS</h1>
     <p>Log in to access the shared posting dashboard.</p>
     <label>Email<input id="loginEmail" type="email" placeholder="you@email.com"></label>
@@ -20,19 +21,41 @@
   </div>
 </section>
 
-<div id="appShell" class="hidden">
-<header>
-  <div>
-    <h1>Sofa Angels OS</h1>
-    <p>Shared Facebook group posting dashboard</p>
-  </div>
-  <div class="headerActions">
-    <span id="roleBadge" class="sync">Checking role...</span>
-    <span id="syncStatus" class="sync">Connecting...</span>
-    <button onclick="refreshAll()">Refresh</button>
-    <button class="secondary" onclick="logout()">Logout</button>
-  </div>
-</header>
+<div id="appShell" class="hidden appLayout">
+  <aside class="sidebar">
+    <div class="brandBlock">
+      <img src="sofa-angels-logo.png" alt="Sofa Angels" class="brandLogo">
+    </div>
+
+    <nav class="sideNav">
+      <button class="tab active" data-tab="post">Dashboard</button>
+      <button class="tab" data-tab="today">Today's Groups</button>
+      <button class="tab" data-tab="groups">Groups</button>
+      <button class="tab" data-tab="history">Posted</button>
+    </nav>
+
+    <div class="sidebarFooter">
+      <button class="logoutBtn" onclick="logout()">Log Out</button>
+      <small>© Sofa Angels OS 2026</small>
+    </div>
+  </aside>
+
+  <section class="mainArea">
+    <header class="topbar">
+      <div>
+        <h1 id="greeting">Good morning</h1>
+        <p>Here's what's ready today.</p>
+      </div>
+      <div class="profileArea">
+        <span id="syncStatus" class="sync">Connecting...</span>
+        <div class="profileBubble" id="profileInitials">SA</div>
+        <div>
+          <strong id="profileName">Sofa Angels</strong>
+          <span id="roleBadge" class="roleText">Checking role...</span>
+        </div>
+        <button class="secondary refreshBtn" onclick="refreshAll()">Refresh</button>
+      </div>
+    </header>
 
 <main>
   <section class="grid">
@@ -40,13 +63,6 @@
     <div class="card"><span id="postedTodayCount">0</span><small>Posted today</small></div>
     <div class="card"><span id="photoCount">0</span><small>Photos uploaded</small></div>
   </section>
-
-  <nav>
-    <button class="tab active" data-tab="post">This Week's Post</button>
-    <button class="tab" data-tab="today">Today's Posting List</button>
-    <button class="tab" data-tab="groups">Groups</button>
-    <button class="tab" data-tab="history">Posted / Not Due Yet</button>
-  </nav>
 
   <section id="post" class="panel active">
     <h2>This Week's Post</h2>
@@ -124,6 +140,7 @@
     <div id="historyTable"></div>
   </section>
 </main>
+  </section>
 </div>
 
 <dialog id="groupDialog">
