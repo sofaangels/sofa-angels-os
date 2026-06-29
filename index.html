@@ -8,14 +8,29 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<section id="loginScreen" class="loginScreen">
+  <div class="loginCard">
+    <h1>Sofa Angels OS</h1>
+    <p>Log in to access the shared posting dashboard.</p>
+    <label>Email<input id="loginEmail" type="email" placeholder="you@email.com"></label>
+    <label>Password<input id="loginPassword" type="password" placeholder="Password"></label>
+    <button onclick="login()">Log In</button>
+    <p id="loginError" class="error"></p>
+  </div>
+</section>
+
+<div id="appShell" class="hidden">
 <header>
   <div>
     <h1>Sofa Angels OS</h1>
     <p>Shared Facebook group posting dashboard</p>
   </div>
   <div class="headerActions">
+    <span id="roleBadge" class="sync">Checking role...</span>
     <span id="syncStatus" class="sync">Connecting...</span>
     <button onclick="refreshAll()">Refresh</button>
+    <button class="secondary" onclick="logout()">Logout</button>
   </div>
 </header>
 
@@ -82,9 +97,9 @@
     <div class="panelHead">
       <div>
         <h2>Facebook Groups</h2>
-        <p class="hint">Add, edit or remove groups here. Changes save to Supabase instantly.</p>
+        <p class="hint" id="groupHelp">Add, edit or remove groups here. Changes save to Supabase instantly.</p>
       </div>
-      <button onclick="showAddGroup()">+ Add Group</button>
+      <button id="addGroupBtn" onclick="showAddGroup()">+ Add Group</button>
     </div>
     <div class="filters">
       <input id="search" oninput="render()" placeholder="Search by group, area or link">
@@ -109,6 +124,7 @@
     <div id="historyTable"></div>
   </section>
 </main>
+</div>
 
 <dialog id="groupDialog">
   <form method="dialog">
