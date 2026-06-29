@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sofa Angels OS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Sofa Angels OS</h1>
+    <p>Shared Facebook group posting dashboard</p>
+  </div>
+  <div class="headerActions">
+    <span id="syncStatus" class="sync">Connecting...</span>
+    <button onclick="refreshAll()">Refresh</button>
+  </div>
+</header>
+
+<main>
+  <section class="grid">
+    <div class="card"><span id="dueCount">0</span><small>Groups due now</small></div>
+    <div class="card"><span id="postedTodayCount">0</span><small>Posted today</small></div>
+    <div class="card"><span id="photoCount">0</span><small>Photos uploaded</small></div>
+  </section>
+
+  <nav>
+    <button class="tab active" data-tab="post">This Week's Post</button>
+    <button class="tab" data-tab="today">Today's Posting List</button>
+    <button class="tab" data-tab="groups">Groups</button>
+    <button class="tab" data-tab="history">Posted / Not Due Yet</button>
+  </nav>
+
+  <section id="post" class="panel active">
+    <h2>This Week's Post</h2>
+    <label>Caption</label>
+    <textarea id="caption" placeholder="Paste this week's Sofa Angels caption here..."></textarea>
+    <div class="row">
+      <button onclick="saveCaption()">Save Caption</button>
+      <button onclick="copyCaption()">Copy Caption</button>
+    </div>
+    <p id="copyStatus" class="hint"></p>
+
+    <hr>
+
+    <div class="panelHead">
+      <h2>Sofa Photos</h2>
+      <button onclick="document.getElementById('photoInput').click()">Upload Photos</button>
+    </div>
+
+    <input id="photoInput" type="file" accept="image/*" multiple hidden>
+    <div id="dropZone" class="dropZone">
+      <strong>Click “Upload Photos” or drag sofa photos here</strong>
+      <span>These upload to Supabase, so both users can see them.</span>
+    </div>
+    <p id="photoStatus" class="hint"></p>
+    <div id="photoGrid" class="photoGrid"></div>
+  </section>
+
+  <section id="today" class="panel">
+    <div class="panelHead">
+      <h2>Today's Posting List</h2>
+      <button onclick="undoToday()">Undo Today's Ticks</button>
+    </div>
+
+    <div class="postingBox">
+      <h3>Posting workflow</h3>
+      <p>Only groups that are due appear here. Groups marked “Anytime / once a week” disappear for 7 days once ticked.</p>
+      <div class="progress"><div id="progressBar"></div></div>
+      <div class="row">
+        <button onclick="copyCaption()">Copy Caption</button>
+        <button onclick="scrollToPhotos()">View Photos</button>
+      </div>
+    </div>
+
+    <div id="todayTable"></div>
+  </section>
+
+  <section id="groups" class="panel">
+    <div class="panelHead">
+      <h2>Facebook Groups</h2>
+      <button onclick="showAddGroup()">Add Group</button>
+    </div>
+    <div class="filters">
+      <input id="search" oninput="render()" placeholder="Search by group or area">
+      <select id="dayFilter" onchange="render()">
+        <option value="">All days</option>
+        <option>Anytime</option>
+        <option>Monday</option>
+        <option>Tuesday</option>
+        <option>Wednesday</option>
+        <option>Thursday</option>
+        <option>Friday</option>
+        <option>Saturday</option>
+        <option>Sunday</option>
+      </select>
+    </div>
+    <div id="groupTable"></div>
+  </section>
+
+  <section id="history" class="panel">
+    <h2>Posted / Not Due Yet</h2>
+    <p class="hint">These groups have already been posted to recently or are waiting for their allowed posting day.</p>
+    <div id="historyTable"></div>
+  </section>
+</main>
+
+<dialog id="groupDialog">
+  <form method="dialog">
+    <h3>Add Facebook Group</h3>
+    <label>Group Name<input id="gName"></label>
+    <label>Facebook Link<input id="gLink" placeholder="https://www.facebook.com/groups/..."></label>
+    <label>Area<input id="gArea"></label>
+    <label>Allowed Days<input id="gDays" placeholder="e.g. Monday, Friday or Anytime"></label>
+    <label>Notes<input id="gNotes" placeholder="e.g. Any day but once a week"></label>
+    <menu>
+      <button value="cancel">Cancel</button>
+      <button onclick="addGroup(event)">Save Group</button>
+    </menu>
+  </form>
+</dialog>
+
+<script>
+  window.SUPABASE_URL = "https://jczthlacebalcplpztvz.supabase.co";
+  window.SUPABASE_KEY = "sb_publishable_iVlfp7HNBT6uAoRYPxovig_gnomc_mq";
+</script>
+<script src="app.js"></script>
+</body>
+</html>
