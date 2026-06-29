@@ -4,11 +4,72 @@ let groups = [];
 let history = [];
 let photos = [];
 let weeklyPost = null;
+let currentUser = null;
+let currentRole = "viewer";
+
+function isAdmin(){ return currentRole === "admin"; }
 
 function setStatus(text, ok=true){
   const el = document.getElementById("syncStatus");
   el.textContent = text;
   el.className = "sync " + (ok ? "ok" : "bad");
+}
+
+async function checkSession(){
+  const { data } = await supabaseClient.auth.getSession();
+  currentUser = data.session?.user || null;
+
+  if(!currentUser){
+    document.getElementById("loginScreen").classList.remove("hidden");
+    document.getElementById("appShell").classList.add("hidden");
+    return;
+  }
+
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("appShell").classList.remove("hidden");
+
+  await loadRole();
+  await refreshAll();
+}
+
+async function loadRole(){
+  currentRole = "viewer";
+  const { data, error } = await supabaseClient
+    .from("app_users")
+    .select("role, display_name")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if(!error && data?.role) currentRole = data.role;
+
+  const label = data?.display_name ? `${data.display_name} · ${currentRole}` : currentRole;
+  const roleBadge = document.getElementById("roleBadge");
+  roleBadge.textContent = label;
+  roleBadge.className = "sync ok";
+
+  document.getElementById("addGroupBtn").style.display = isAdmin() ? "inline-block" : "none";
+  document.getElementById("groupHelp").textContent = isAdmin()
+    ? "Add, edit or remove groups here. Changes save to Supabase instantly."
+    : "View-only. Ask Lynsey/admin to add, edit or delete groups.";
+}
+
+async function login(){
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const errorEl = document.getElementById("loginError");
+  errorEl.textContent = "";
+
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){
+    errorEl.textContent = error.message;
+    return;
+  }
+  await checkSession();
+}
+
+async function logout(){
+  await supabaseClient.auth.signOut();
+  location.reload();
 }
 
 function isoToday(){ return new Date().toISOString().slice(0,10); }
@@ -67,6 +128,7 @@ document.querySelectorAll(".tab").forEach(btn=>{
 });
 
 async function refreshAll(){
+  if(!currentUser) return;
   try{
     setStatus("Syncing...");
     const [gRes,hRes,pRes,photoRes] = await Promise.all([
@@ -137,8 +199,8 @@ function renderGroups(){
       <td>${g.notes||""}</td>
       <td>
         <div class="actions">
-          <button class="small secondary" onclick="showEditGroup('${g.id}')">Edit</button>
-          <button class="small danger" onclick="deleteGroup('${g.id}')">Delete</button>
+          ${isAdmin() ? `<button class="small secondary" onclick="showEditGroup('${g.id}')">Edit</button>
+          <button class="small danger" onclick="deleteGroup('${g.id}')">Delete</button>` : `<span class="hint">View only</span>`}
         </div>
       </td>
     </tr>
@@ -220,7 +282,7 @@ async function markPosted(groupId, checked){
   const { error } = await supabaseClient.from("posting_history").insert({
     group_id: groupId,
     posted_at: isoToday(),
-    posted_by: "Sofa Angels"
+    posted_by: currentUser.email
   });
   if(error){ alert(error.message); return; }
   await refreshAll();
@@ -253,12 +315,14 @@ function clearGroupForm(){
 }
 
 function showAddGroup(){
+  if(!isAdmin()){ alert("Only an admin can add groups."); return; }
   clearGroupForm();
   document.getElementById("groupDialogTitle").textContent = "Add Facebook Group";
   document.getElementById("groupDialog").showModal();
 }
 
 function showEditGroup(groupId){
+  if(!isAdmin()){ alert("Only an admin can edit groups."); return; }
   const g = groups.find(x=>x.id===groupId);
   if(!g) return;
   document.getElementById("groupDialogTitle").textContent = "Edit Facebook Group";
@@ -273,6 +337,8 @@ function showEditGroup(groupId){
 
 async function saveGroup(event){
   event.preventDefault();
+  if(!isAdmin()){ alert("Only an admin can save groups."); return; }
+
   const id = document.getElementById("gId").value;
   const payload = {
     name: document.getElementById("gName").value.trim(),
@@ -297,6 +363,7 @@ async function saveGroup(event){
 }
 
 async function deleteGroup(groupId){
+  if(!isAdmin()){ alert("Only an admin can delete groups."); return; }
   const g = groups.find(x=>x.id===groupId);
   if(!g) return;
   if(!confirm(`Delete "${g.name}"? This also removes its posting history.`)) return;
@@ -349,4 +416,8 @@ async function deletePhoto(id){
   await refreshAll();
 }
 
-refreshAll();
+supabaseClient.auth.onAuthStateChange((_event, session)=>{
+  currentUser = session?.user || null;
+});
+
+checkSession();
