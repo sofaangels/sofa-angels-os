@@ -135,9 +135,15 @@ function renderGroups(){
       <td><span class="badge">${g.allowed_days||""}</span></td>
       <td>${g.link ? `<a href="${g.link}" target="_blank">Open</a>` : "No link"}</td>
       <td>${g.notes||""}</td>
+      <td>
+        <div class="actions">
+          <button class="small secondary" onclick="showEditGroup('${g.id}')">Edit</button>
+          <button class="small danger" onclick="deleteGroup('${g.id}')">Delete</button>
+        </div>
+      </td>
     </tr>
   `);
-  document.getElementById("groupTable").innerHTML = table(["Group","Area","Allowed Days","Link","Notes"], rows);
+  document.getElementById("groupTable").innerHTML = table(["Group","Area","Allowed Days","Link","Notes","Manage"], rows);
 }
 
 function renderToday(){
@@ -174,7 +180,7 @@ function renderHistory(){
         <td>${g.area||""}</td>
         <td>${posted || "Not posted recently"}</td>
         <td><span class="badge wait">${statusText(g)}</span></td>
-        <td>${rec ? `<button class="secondary" onclick="undoGroup('${g.id}')">Undo</button>` : ""}</td>
+        <td>${rec ? `<button class="secondary small" onclick="undoGroup('${g.id}')">Undo</button>` : ""}</td>
       </tr>
     `;
   });
@@ -242,21 +248,61 @@ function scrollToPhotos(){
   setTimeout(()=>document.getElementById("photoGrid").scrollIntoView({behavior:"smooth"}),100);
 }
 
-function showAddGroup(){ document.getElementById("groupDialog").showModal(); }
+function clearGroupForm(){
+  ["gId","gName","gLink","gArea","gDays","gNotes"].forEach(id=>document.getElementById(id).value="");
+}
 
-async function addGroup(event){
+function showAddGroup(){
+  clearGroupForm();
+  document.getElementById("groupDialogTitle").textContent = "Add Facebook Group";
+  document.getElementById("groupDialog").showModal();
+}
+
+function showEditGroup(groupId){
+  const g = groups.find(x=>x.id===groupId);
+  if(!g) return;
+  document.getElementById("groupDialogTitle").textContent = "Edit Facebook Group";
+  document.getElementById("gId").value = g.id;
+  document.getElementById("gName").value = g.name || "";
+  document.getElementById("gLink").value = g.link || "";
+  document.getElementById("gArea").value = g.area || "";
+  document.getElementById("gDays").value = g.allowed_days || "";
+  document.getElementById("gNotes").value = g.notes || "";
+  document.getElementById("groupDialog").showModal();
+}
+
+async function saveGroup(event){
   event.preventDefault();
+  const id = document.getElementById("gId").value;
   const payload = {
-    name: document.getElementById("gName").value,
-    link: document.getElementById("gLink").value,
-    area: document.getElementById("gArea").value,
-    allowed_days: document.getElementById("gDays").value,
-    notes: document.getElementById("gNotes").value
+    name: document.getElementById("gName").value.trim(),
+    link: document.getElementById("gLink").value.trim(),
+    area: document.getElementById("gArea").value.trim(),
+    allowed_days: document.getElementById("gDays").value.trim(),
+    notes: document.getElementById("gNotes").value.trim()
   };
-  const { error } = await supabaseClient.from("facebook_groups").insert(payload);
-  if(error){ alert(error.message); return; }
+  if(!payload.name){ alert("Please add a group name."); return; }
+
+  let result;
+  if(id){
+    result = await supabaseClient.from("facebook_groups").update(payload).eq("id", id);
+  }else{
+    result = await supabaseClient.from("facebook_groups").insert(payload);
+  }
+
+  if(result.error){ alert(result.error.message); return; }
   document.getElementById("groupDialog").close();
-  ["gName","gLink","gArea","gDays","gNotes"].forEach(id=>document.getElementById(id).value="");
+  clearGroupForm();
+  await refreshAll();
+}
+
+async function deleteGroup(groupId){
+  const g = groups.find(x=>x.id===groupId);
+  if(!g) return;
+  if(!confirm(`Delete "${g.name}"? This also removes its posting history.`)) return;
+
+  const { error } = await supabaseClient.from("facebook_groups").delete().eq("id", groupId);
+  if(error){ alert(error.message); return; }
   await refreshAll();
 }
 

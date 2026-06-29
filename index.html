@@ -80,11 +80,14 @@
 
   <section id="groups" class="panel">
     <div class="panelHead">
-      <h2>Facebook Groups</h2>
-      <button onclick="showAddGroup()">Add Group</button>
+      <div>
+        <h2>Facebook Groups</h2>
+        <p class="hint">Add, edit or remove groups here. Changes save to Supabase instantly.</p>
+      </div>
+      <button onclick="showAddGroup()">+ Add Group</button>
     </div>
     <div class="filters">
-      <input id="search" oninput="render()" placeholder="Search by group or area">
+      <input id="search" oninput="render()" placeholder="Search by group, area or link">
       <select id="dayFilter" onchange="render()">
         <option value="">All days</option>
         <option>Anytime</option>
@@ -109,15 +112,16 @@
 
 <dialog id="groupDialog">
   <form method="dialog">
-    <h3>Add Facebook Group</h3>
-    <label>Group Name<input id="gName"></label>
+    <h3 id="groupDialogTitle">Add Facebook Group</h3>
+    <input id="gId" type="hidden">
+    <label>Group Name<input id="gName" required></label>
     <label>Facebook Link<input id="gLink" placeholder="https://www.facebook.com/groups/..."></label>
-    <label>Area<input id="gArea"></label>
+    <label>Area<input id="gArea" placeholder="Wilmslow, Stockport, etc"></label>
     <label>Allowed Days<input id="gDays" placeholder="e.g. Monday, Friday or Anytime"></label>
     <label>Notes<input id="gNotes" placeholder="e.g. Any day but once a week"></label>
     <menu>
-      <button value="cancel">Cancel</button>
-      <button onclick="addGroup(event)">Save Group</button>
+      <button value="cancel" class="secondary">Cancel</button>
+      <button onclick="saveGroup(event)">Save Group</button>
     </menu>
   </form>
 </dialog>
