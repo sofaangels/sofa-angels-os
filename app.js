@@ -116,7 +116,16 @@ function fallbackCopy(text){
 }
 function esc(text){ return String(text||"").replaceAll("\\","\\\\").replaceAll("'","\\'"); }
 function table(headers, rows){
-  return `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
+  // Adds mobile-friendly labels to each td based on the table headers.
+  const processed = rows.map(row => {
+    let i = 0;
+    return row.replace(/<td(.*?)>/g, (match, attrs) => {
+      const label = headers[i] || "";
+      i++;
+      return `<td${attrs} data-label="${label}">`;
+    });
+  });
+  return `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${processed.join("")}</tbody></table>`;
 }
 
 document.querySelectorAll(".tab").forEach(btn=>{
@@ -221,7 +230,7 @@ function renderToday(){
       <td><strong>${g.name}</strong></td>
       <td>${g.area||""}</td>
       <td>${g.allowed_days||""}</td>
-      <td><button onclick="copyAndOpen('${esc(g.link||"")}')">${g.link ? "Copy + Open" : "Copy Only"}</button></td>
+      <td><button onclick="copyAndOpen('${esc(g.link||"")}')">${g.link ? "Copy + Open Group" : "Copy Caption"}</button></td>
       <td>${statusText(g)}${g.notes ? "<br><small>"+g.notes+"</small>" : ""}</td>
     </tr>
   `);
