@@ -348,6 +348,11 @@ function scrollToPhotos(){
   setTimeout(()=>document.getElementById("photoGrid").scrollIntoView({behavior:"smooth"}),100);
 }
 
+function closeGroupDialog(){
+  document.getElementById("groupDialog").close();
+  clearGroupForm();
+}
+
 function clearGroupForm(){
   ["gId","gName","gLink","gArea","gDays","gNotes"].forEach(id=>document.getElementById(id).value="");
 }
