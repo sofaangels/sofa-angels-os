@@ -147,11 +147,22 @@
   <form method="dialog">
     <h3 id="groupDialogTitle">Add Facebook Group</h3>
     <input id="gId" type="hidden">
-    <label>Group Name<input id="gName" required></label>
+    <label>Group Name<input id="gName"></label>
     <label>Facebook Link<input id="gLink" placeholder="https://www.facebook.com/groups/..."></label>
     <label>Area<input id="gArea" placeholder="Wilmslow, Stockport, etc"></label>
-    <label>Allowed Days<input id="gDays" placeholder="e.g. Monday, Friday or Anytime"></label>
+    <label>Allowed Days</label>
+    <div class="daySelector">
+      <label><input type="checkbox" id="dayAnytime" value="Anytime" onchange="toggleAnytimeDays()"> Any day</label>
+      <label><input type="checkbox" class="dayCheck" value="Monday"> Monday</label>
+      <label><input type="checkbox" class="dayCheck" value="Tuesday"> Tuesday</label>
+      <label><input type="checkbox" class="dayCheck" value="Wednesday"> Wednesday</label>
+      <label><input type="checkbox" class="dayCheck" value="Thursday"> Thursday</label>
+      <label><input type="checkbox" class="dayCheck" value="Friday"> Friday</label>
+      <label><input type="checkbox" class="dayCheck" value="Saturday"> Saturday</label>
+      <label><input type="checkbox" class="dayCheck" value="Sunday"> Sunday</label>
+    </div>
     <label>Notes<input id="gNotes" placeholder="e.g. Any day but once a week"></label>
+    <p id="groupFormError" class="formError"></p>
     <menu>
       <button type="button" class="secondary" onclick="closeGroupDialog()">Cancel</button>
       <button onclick="saveGroup(event)">Save Group</button>
@@ -164,5 +175,6 @@
   window.SUPABASE_KEY = "sb_publishable_iVlfp7HNBT6uAoRYPxovig_gnomc_mq";
 </script>
 <script src="app.js"></script>
+<div id="toastContainer" class="toastContainer"></div>
 </body>
 </html>

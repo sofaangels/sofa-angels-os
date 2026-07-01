@@ -32,6 +32,96 @@ function updateGreeting(){
 
 function isAdmin(){ return currentRole === "admin"; }
 
+function showToast(message, type="success"){
+  const container = document.getElementById("toastContainer");
+  if(!container){
+    alert(message);
+    return;
+  }
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(10px)";
+    setTimeout(() => toast.remove(), 250);
+  }, 2600);
+}
+
+function titleCaseWords(value){
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function normaliseArea(value){
+  return String(value || "")
+    .split("/")
+    .map(part => titleCaseWords(part))
+    .join(" / ");
+}
+
+function selectedDays(){
+  const any = document.getElementById("dayAnytime");
+  if(any && any.checked) return "Anytime";
+  return [...document.querySelectorAll(".dayCheck:checked")]
+    .map(cb => cb.value)
+    .join(", ");
+}
+
+function setSelectedDays(value){
+  const text = String(value || "").toLowerCase();
+  const any = document.getElementById("dayAnytime");
+  const checks = [...document.querySelectorAll(".dayCheck")];
+
+  if(any) any.checked = text.includes("anytime");
+  checks.forEach(cb => {
+    cb.checked = !text.includes("anytime") && text.includes(cb.value.toLowerCase());
+    cb.disabled = text.includes("anytime");
+  });
+}
+
+function toggleAnytimeDays(){
+  const any = document.getElementById("dayAnytime");
+  const checks = [...document.querySelectorAll(".dayCheck")];
+  checks.forEach(cb => {
+    cb.disabled = any.checked;
+    if(any.checked) cb.checked = false;
+  });
+}
+
+function clearGroupFormError(){
+  const err = document.getElementById("groupFormError");
+  if(err){
+    err.textContent = "";
+    err.classList.remove("show");
+  }
+  ["gName","gLink","gArea","gNotes"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.remove("inputError");
+  });
+}
+
+function showGroupFormError(message, fieldId){
+  const err = document.getElementById("groupFormError");
+  if(err){
+    err.textContent = message;
+    err.classList.add("show");
+  }else{
+    alert(message);
+  }
+  if(fieldId){
+    const field = document.getElementById(fieldId);
+    if(field){
+      field.classList.add("inputError");
+      field.focus();
+    }
+  }
+}
+
+
 function setStatus(text, ok=true){
   const el = document.getElementById("syncStatus");
   el.textContent = text;
@@ -94,7 +184,11 @@ async function login(){
     errorEl.textContent = error.message;
     return;
   }
-  await checkSession();
+  await document.addEventListener("input", (event) => {
+  if(event.target.closest("#groupDialog")) clearGroupFormError();
+});
+
+checkSession();
 }
 
 async function logout(){
@@ -300,14 +394,14 @@ async function saveCaption(){
     res = await supabaseClient.from("weekly_post").insert({caption, updated_at: now});
   }
   if(res.error){ alert(res.error.message); return; }
-  document.getElementById("copyStatus").textContent = "Caption saved and synced.";
+  document.getElementById("copyStatus").textContent = "Caption saved and synced."; showToast("Caption saved");
   await refreshAll();
 }
 
 async function copyCaption(){
   const caption = document.getElementById("caption").value;
   const ok = await safeCopy(caption || "");
-  document.getElementById("copyStatus").textContent = ok ? "Caption copied." : "Copy failed. Highlight the caption and copy manually.";
+  document.getElementById("copyStatus").textContent = ok ? "Caption copied." : "Copy failed. Highlight the caption and copy manually."; if(ok) showToast("Caption copied");
 }
 
 async function copyAndOpen(link){
@@ -323,6 +417,7 @@ async function markPosted(groupId, checked){
     posted_by: currentUser.email
   });
   if(error){ alert(error.message); return; }
+  showToast("Marked as posted");
   await refreshAll();
 }
 
@@ -354,7 +449,12 @@ function closeGroupDialog(){
 }
 
 function clearGroupForm(){
-  ["gId","gName","gLink","gArea","gDays","gNotes"].forEach(id=>document.getElementById(id).value="");
+  ["gId","gName","gLink","gArea","gNotes"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = "";
+  });
+  setSelectedDays("");
+  clearGroupFormError();
 }
 
 function showAddGroup(){
@@ -373,7 +473,8 @@ function showEditGroup(groupId){
   document.getElementById("gName").value = g.name || "";
   document.getElementById("gLink").value = g.link || "";
   document.getElementById("gArea").value = g.area || "";
-  document.getElementById("gDays").value = g.allowed_days || "";
+  setSelectedDays(g.allowed_days || "");
+  clearGroupFormError();
   document.getElementById("gNotes").value = g.notes || "";
   document.getElementById("groupDialog").showModal();
 }
@@ -383,14 +484,25 @@ async function saveGroup(event){
   if(!isAdmin()){ alert("Only an admin can save groups."); return; }
 
   const id = document.getElementById("gId").value;
+  clearGroupFormError();
+
   const payload = {
-    name: document.getElementById("gName").value.trim(),
+    name: titleCaseWords(document.getElementById("gName").value),
     link: document.getElementById("gLink").value.trim(),
-    area: document.getElementById("gArea").value.trim(),
-    allowed_days: document.getElementById("gDays").value.trim(),
+    area: normaliseArea(document.getElementById("gArea").value),
+    allowed_days: selectedDays(),
     notes: document.getElementById("gNotes").value.trim()
   };
-  if(!payload.name){ alert("Please add a group name."); return; }
+
+  if(!payload.name){
+    showGroupFormError("Please enter a group name.", "gName");
+    return;
+  }
+
+  if(!payload.allowed_days){
+    showGroupFormError("Please choose at least one posting day, or select Any day.");
+    return;
+  }
 
   let result;
   if(id){
@@ -399,9 +511,10 @@ async function saveGroup(event){
     result = await supabaseClient.from("facebook_groups").insert(payload);
   }
 
-  if(result.error){ alert(result.error.message); return; }
+  if(result.error){ showToast(result.error.message, "error"); return; }
   document.getElementById("groupDialog").close();
   clearGroupForm();
+  showToast(id ? "Group updated" : "Group added");
   await refreshAll();
 }
 
@@ -412,7 +525,8 @@ async function deleteGroup(groupId){
   if(!confirm(`Delete "${g.name}"? This also removes its posting history.`)) return;
 
   const { error } = await supabaseClient.from("facebook_groups").delete().eq("id", groupId);
-  if(error){ alert(error.message); return; }
+  if(error){ showToast(error.message, "error"); return; }
+  showToast("Group deleted");
   await refreshAll();
 }
 
@@ -443,7 +557,7 @@ async function handleFiles(fileList){
     if(insert.error){ alert("Photo database error: " + insert.error.message); }
   }
 
-  document.getElementById("photoStatus").textContent = "Upload complete.";
+  document.getElementById("photoStatus").textContent = "Upload complete."; showToast("Photo upload complete");
   await refreshAll();
 }
 
@@ -461,6 +575,10 @@ async function deletePhoto(id){
 
 supabaseClient.auth.onAuthStateChange((_event, session)=>{
   currentUser = session?.user || null;
+});
+
+document.addEventListener("input", (event) => {
+  if(event.target.closest("#groupDialog")) clearGroupFormError();
 });
 
 checkSession();
