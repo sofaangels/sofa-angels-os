@@ -200,7 +200,16 @@ function isoToday(){ return new Date().toISOString().slice(0,10); }
 function todayName(){ return new Date().toLocaleDateString("en-GB",{weekday:"long"}); }
 function dateFromISO(iso){ const [y,m,d]=String(iso||"").split("-").map(Number); return new Date(y,m-1,d); }
 function daysBetween(startISO,endISO){ return Math.floor((dateFromISO(endISO)-dateFromISO(startISO))/(24*60*60*1000)); }
-function weeklyRule(group){ const text=((group.allowed_days||"")+" "+(group.notes||"")).toLowerCase(); return text.includes("anytime") || text.includes("once a week") || text.includes("weekly"); }
+function weeklyRule(group){
+  // New reliable scheduling rule.
+  // "weekly" means show once per week only.
+  // "every_allowed_day" means show every selected allowed day.
+  if(group.frequency) return group.frequency === "weekly";
+
+  // Backwards compatibility for old groups before the frequency column existed.
+  const text = ((group.allowed_days || "") + " " + (group.notes || "")).toLowerCase();
+  return text.includes("anytime") || text.includes("once a week") || text.includes("weekly");
+}
 function dayAllowedToday(group){ const days=String(group.allowed_days||"").toLowerCase(); return days.includes("anytime") || days.includes(todayName().toLowerCase()); }
 function latestHistory(groupId){ return history.filter(h=>h.group_id===groupId).sort((a,b)=>String(b.posted_at).localeCompare(String(a.posted_at)))[0] || null; }
 
@@ -328,7 +337,7 @@ function renderGroups(){
       <td>${g.area||""}</td>
       <td><span class="badge">${g.allowed_days||""}</span></td>
       <td>${g.link ? `<a href="${g.link}" target="_blank">Open</a>` : "No link"}</td>
-      <td>${g.notes||""}</td>
+      <td>${g.notes||""}<br><span class="frequencyBadge">${weeklyRule(g) ? "Once per week" : "Every allowed day"}</span></td>
       <td>
         <div class="actions">
           ${isAdmin() ? `<button class="small secondary" onclick="showEditGroup('${g.id}')">Edit</button>
@@ -453,6 +462,8 @@ function clearGroupForm(){
     const el = document.getElementById(id);
     if(el) el.value = "";
   });
+  const freq = document.getElementById("gFrequency");
+  if(freq) freq.value = "every_allowed_day";
   setSelectedDays("");
   clearGroupFormError();
 }
@@ -476,6 +487,7 @@ function showEditGroup(groupId){
   setSelectedDays(g.allowed_days || "");
   clearGroupFormError();
   document.getElementById("gNotes").value = g.notes || "";
+  document.getElementById("gFrequency").value = g.frequency || (weeklyRule(g) ? "weekly" : "every_allowed_day");
   document.getElementById("groupDialog").showModal();
 }
 
@@ -491,6 +503,7 @@ async function saveGroup(event){
     link: document.getElementById("gLink").value.trim(),
     area: normaliseArea(document.getElementById("gArea").value),
     allowed_days: selectedDays(),
+    frequency: document.getElementById("gFrequency").value,
     notes: document.getElementById("gNotes").value.trim()
   };
 

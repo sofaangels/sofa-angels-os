@@ -161,7 +161,13 @@
       <label><input type="checkbox" class="dayCheck" value="Saturday"> Saturday</label>
       <label><input type="checkbox" class="dayCheck" value="Sunday"> Sunday</label>
     </div>
-    <label>Notes<input id="gNotes" placeholder="e.g. Any day but once a week"></label>
+    <label>Posting Frequency</label>
+    <select id="gFrequency">
+      <option value="every_allowed_day">Every allowed day</option>
+      <option value="weekly">Once per week</option>
+    </select>
+
+    <label>Notes<input id="gNotes" placeholder="e.g. Business posts allowed, special rules, etc"></label>
     <p id="groupFormError" class="formError"></p>
     <menu>
       <button type="button" class="secondary" onclick="closeGroupDialog()">Cancel</button>
